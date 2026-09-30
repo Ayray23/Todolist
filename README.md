@@ -17,4 +17,4 @@ Vite serves the app at http://localhost:5173 and proxies `/api` requests to the 
 npm run build
 npm start
 ```
-The API stores tasks in `server/tasks.json`. For deployment, use a persistent disk/volume for that file; ephemeral server filesystems can lose data on redeploy. This starter is intended for a single-server deployment, not multi-instance scaling.
+On Vercel, the app uses browser `localStorage` so tasks persist in that browser without relying on a server filesystem. Tasks are device/browser-specific and do not sync across devices. In local development, the Node API stores tasks in `server/tasks.json`.
