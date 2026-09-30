@@ -1,0 +1,9 @@
+import express from 'express'; import cors from 'cors'; import fs from 'node:fs/promises'; import path from 'node:path'; import {fileURLToPath} from 'node:url';
+const app=express(), PORT=process.env.PORT||4000; const file=path.join(path.dirname(fileURLToPath(import.meta.url)),'tasks.json'); app.use(cors()); app.use(express.json());
+async function read(){try{return JSON.parse(await fs.readFile(file,'utf8'))}catch{return []}} async function save(tasks){await fs.writeFile(file,JSON.stringify(tasks,null,2))}
+app.get('/api/health',(_,res)=>res.json({ok:true})); app.get('/api/tasks',async(_,res)=>res.json(await read()));
+app.post('/api/tasks',async(req,res)=>{const title=String(req.body.title||'').trim(); if(!title)return res.status(400).json({error:'Task title is required'});const tasks=await read();const task={id:crypto.randomUUID(),title,completed:false,priority:['low','medium','high'].includes(req.body.priority)?req.body.priority:'medium',dueDate:req.body.dueDate||'',createdAt:new Date().toISOString()};tasks.unshift(task);await save(tasks);res.status(201).json(task)});
+app.patch('/api/tasks/:id',async(req,res)=>{const tasks=await read(),i=tasks.findIndex(t=>t.id===req.params.id);if(i<0)return res.status(404).json({error:'Task not found'});tasks[i]={...tasks[i],...req.body,id:tasks[i].id};await save(tasks);res.json(tasks[i])});
+app.delete('/api/tasks/:id',async(req,res)=>{const tasks=await read(),next=tasks.filter(t=>t.id!==req.params.id);if(next.length===tasks.length)return res.status(404).json({error:'Task not found'});await save(next);res.status(204).end()});
+app.delete('/api/tasks',async(req,res)=>{await save((await read()).filter(t=>!t.completed));res.status(204).end()});
+app.listen(PORT,()=>console.log('API running on http://localhost:'+PORT));
